@@ -45,7 +45,7 @@ class AcademyTimer(commands.Cog):
                 else:
                     self.startTimer(user)
 
-                    message = """{} your Academy timer is set to expire in 3 hours!""".format(ctx.author.mention)
+                    message = """{} your Academy timer is set to expire in 2 hours!""".format(ctx.author.mention)
                     await channel_timers.send(message)
 
                     message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
@@ -90,7 +90,7 @@ class AcademyTimer(commands.Cog):
             else:
                 self.startTimer(user)
 
-            message = """{} your Academy timer set to expire in 3 hours!""".format(ctx.author.mention)
+            message = """{} your Academy timer set to expire in 2 hours!""".format(ctx.author.mention)
             await channel_timers.send(message)
 
             message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
@@ -102,6 +102,9 @@ class AcademyTimer(commands.Cog):
 
     @academy.command()
     async def help(self, ctx):
+        message = """
+This command will start a timer for 2 hours and announce to the union you have opened an Academy room.
+        """
         return
 
     def getErrorMessage(ctx):
@@ -127,7 +130,7 @@ class AcademyTimer(commands.Cog):
 
     def startTimer(self, user):
         try:
-            endTime = self.timeNow() + (60 * 60 * 3)
+            endTime = self.timeNow() + (60 * 60 * 2)
             query = "INSERT INTO Timers (userId, endTime, type) VALUES (?, ?, ?)"
 
             self.cursortimers.execute(query, (user, endTime, 'A'))
