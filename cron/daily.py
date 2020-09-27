@@ -8,7 +8,7 @@ load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 DISCORD_GUILD = os.getenv('DISCORD_GUILD')
-CHANNEL_DAILY_RESET = os.getenv('CHANNEL_DAILY_RESET')
+CHANNEL_UNION = os.getenv('CHANNEL_UNION')
 
 client = discord.Client()
 
@@ -20,8 +20,7 @@ async def on_ready():
 async def process_reset():
     try:
         guild = get(client.guilds, name='YMOC')
-        print(guild)
-        channel = get(guild.channels, name=CHANNEL_DAILY_RESET)
+        channel = get(guild.channels, name=CHANNEL_UNION)
 
         message = "@everyone :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: Daily Reset :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: "
         await channel.send(message)

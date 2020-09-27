@@ -29,7 +29,7 @@ async def on_ready():
 
 async def process_timers():
     try:
-        now = int(datetime.now(timezone.utc).strftime('%s'))
+        now = int(datetime.now(timezone.est).strftime('%s'))
         query = "SELECT * FROM Timers WHERE endTime < ?"
         results = cursor.execute(query, (now,)).fetchall()
 
