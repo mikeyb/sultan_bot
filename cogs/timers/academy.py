@@ -9,7 +9,7 @@ from discord.utils import get
 
 load_dotenv()
 
-CHANNEL_UNION = os.getenv('CHANNEL_UNION')
+CHANNEL_COMPANION_HALL = os.getenv('CHANNEL_COMPANION_HALL')
 CHANNEL_TIMERS = os.getenv('CHANNEL_TIMERS')
 DATABASE_TIMERS = os.getenv('DATABASE_TIMERS')
 DATABASE_USER_PREFS = os.getenv('DATABASE_USER_PREFS')
@@ -35,7 +35,7 @@ class AcademyTimer(commands.Cog):
 
                 user = ctx.author.id
                 channel_timers = self.getTimersChannel(ctx)
-                channel_union = self.getUnionChannel(ctx)
+                channel_companion_hall = self.getCompanionHallChannel(ctx)
 
                 activeTimer = self.getActiveTimer(user)
                 if activeTimer:
@@ -49,7 +49,7 @@ class AcademyTimer(commands.Cog):
                     await channel_timers.send(message)
 
                     message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
-                    await channel_union.send(message)
+                    await channel_companion_hall.send(message)
             except:
                 message = self.getErrorMessage(ctx)
                 await channel.send(message)
@@ -80,7 +80,7 @@ class AcademyTimer(commands.Cog):
         try:
             user = ctx.author.id
             channel_timers = self.getTimersChannel(ctx)
-            channel_union = self.getUnionChannel(ctx)
+            channel_companion_hall = self.getCompanionHallChannel(ctx)
 
             activeTimer = self.getActiveTimer(user)
 
@@ -94,7 +94,7 @@ class AcademyTimer(commands.Cog):
             await channel_timers.send(message)
 
             message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
-            await channel_union.send(message)
+            await channel_companion_hall.send(message)
 
         except:
             message = self.getErrorMessage(ctx)
@@ -112,8 +112,8 @@ class AcademyTimer(commands.Cog):
     def getTimersChannel(self, ctx):
         return get(ctx.guild.channels, name=CHANNEL_TIMERS)
 
-    def getUnionChannel(ctx):
-        return get(ctx.guild.channels, name=CHANNEL_UNION)
+    def getCompanionHallChannel(self, ctx):
+        return get(ctx.guild.channels, name=CHANNEL_COMPANION_HALL)
 
     def getActiveTimer(self, user):
         try:
