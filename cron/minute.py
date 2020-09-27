@@ -4,7 +4,6 @@ import discord
 
 from datetime import datetime,timezone
 from dotenv import load_dotenv
-from discord.ext import commands
 from discord.utils import get
 
 load_dotenv()
@@ -23,7 +22,6 @@ client = discord.Client()
 
 @client.event
 async def on_ready():
-    print('Connected...')
     await process_timers()
     return await client.logout()
 
