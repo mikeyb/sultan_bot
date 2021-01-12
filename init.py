@@ -24,7 +24,8 @@ bot = commands.Bot(
 
 cogs = [
     'cogs.admin.loading',
-    'cogs.timers.academy'
+    'cogs.timers.academy',
+    'cogs.timers.companion',
 ]
 
 @bot.event

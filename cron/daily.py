@@ -19,10 +19,10 @@ async def on_ready():
 
 async def process_reset():
     try:
-        guild = get(client.guilds, name='YMOC')
+        guild = get(client.guilds, name=DISCORD_GUILD)
         channel = get(guild.channels, name=CHANNEL_UNION)
 
-        message = "@everyone :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: Daily Reset :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: :congapartyparrot: "
+        message = "@everyone :dancer: :dancer: :dancer: :dancer: :dancer: Daily Reset :dancer: :dancer: :dancer: :dancer: :dancer:"
         await channel.send(message)
     except Exception as error:
         print('There was an exception in running daily reset crons: {}'.format(error))

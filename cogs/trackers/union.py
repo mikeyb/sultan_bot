@@ -12,7 +12,7 @@ load_dotenv()
 
 OWNER = os.getenv('OWNER')
 CHANNEL_TRACKERS = os.getenv('CHANNEL_TRACKERS')
-DATABASE_TRACKERS = os.getenv('db/trackers.db')
+DATABASE_TRACKERS = os.getenv('DATABASE_TRACKERS')
 
 class UnionTracker(commands.Cog):
     def __init__(self, bot):
@@ -31,7 +31,7 @@ class UnionTracker(commands.Cog):
     )
     async def union(self, ctx):
         if ctx.invoked_subcommand is None:
-            pass
+            await ctx.invoke(self.list)
         return
 
     @union.command()
@@ -42,68 +42,66 @@ class UnionTracker(commands.Cog):
 
         try:
             if identifier is None:
-                unionList = self.getUnionList()
-                message = self.getUnionListMessage(unionList)
+                unionList = await self.getUnionList(ctx)
+                embed = self.getUnionListMessage(ctx, unionList)
 
-                await channel_trackers.send(message)
+                return await channel_trackers.send(content='', embed=embed)
             else:
-                union = self.getUnionByIdentifier(identifier)
+                union = await self.getUnionByIdentifier(ctx, identifier)
 
                 if union is not None:
-                    if message is not None:
-                        message = self.getUnionMessage(union)
-                        return await channel_trackers.send(message)
-                    else:
-                        message = "{}, I was unable to find that union".format(ctx.author.mention)
-                        return await channel_trackers.send(message)
-            return None
-        except:
-            message = self.getErrorMessage(ctx)
-            await ctx.author.send(message)
+                    embed = self.getUnionMessage(ctx, union)
+                    return await channel_trackers.send(content=None, embed=embed)
+                else:
+                    message = "{}, I was unable to find that union!".format(ctx.author.mention)
+                    return await channel_trackers.send(message)
+            return
+
+        except Exception as e:
+            await ctx.author.send(e)
 
         return None
 
     @union.command()
     @commands.check(is_owner)
     async def add(self, ctx,
-        rank: int = None,
+        rank: str = None,
         name: str = None,
-        unionId: int = None,
+        unionId: str = None,
         initials: str = None,
         leader: str = None,
-        leaderId: int = None
+        leaderId: str = None
     ):
+        channel_trackers = self.getTrackersChannel(ctx)
 
         if None in [rank,name,unionId,initials,leader,leaderId]:
             message = "!union add <rank> <name> <union id> <initials> <leader> <leader id>"
             return await channel_trackers.send(message)
 
-        channel_trackers = self.getTrackersChannel(ctx)
-
         try:
             union = [rank,name,unionId,initials,leader,leaderId]
-            added = self.addUnion(union)
+            added = await self.addUnion(ctx, union)
             if added:
-                message = "Union {} Added!".format(union[1])
+                message = "Union {} Added!".format(name)
                 await channel_trackers.send(message)
 
         except:
-            message = self.getErrorMessage(ctx)
-            await ctx.author.send(message)
+            return
+            # message = self.getErrorMessage(ctx)
+            # await ctx.author.send(message)
 
         return
 
-    @union.command()
+    @union.command(aliases=['del'])
     @commands.check(is_owner)
-    async def del(self, ctx,
+    async def delete(self, ctx,
         identifier: str = None
     ):
+        channel_trackers = self.getTrackersChannel(ctx)
 
         if None in [identifier]:
             message = "!union del <initials>"
             return await channel_trackers.send(message)
-
-        channel_trackers = self.getTrackersChannel(ctx)
 
         try:
             union = self.getUnionByIdentifier(identifier)
@@ -115,8 +113,9 @@ class UnionTracker(commands.Cog):
                 await channel_trackers.send(message)
 
         except:
-            message = self.getErrorMessage(ctx)
-            await ctx.author.send(message)
+            return
+            # message = self.getErrorMessage(ctx)
+            # await ctx.author.send(message)
 
         return
 
@@ -126,24 +125,26 @@ class UnionTracker(commands.Cog):
         identifier: str = None,
         rank: str = None
     ):
+        channel_trackers = self.getTrackersChannel(ctx)
+
         if None in [identifier, rank]:
             message = "!union rank <initials> <rank>"
             return await channel_trackers.send(message)
 
-        channel_trackers = self.getTrackersChannel(ctx)
-
         try:
-            union = self.getUnionByIdentifier(identifier)
-
+            union = await self.getUnionByIdentifier(ctx, identifier)
+            print('unionnnnn')
+            print(union)
             if union is not None:
-                updated = self.updateUnionRank(union.id, rank)
+                updated = await self.updateUnionRank(ctx, union['id'], rank)
 
-                message = "Union {} rank updated to {}!".format(union.name, rank)
+                message = "Union {} rank updated to {}!".format(union['name'], rank)
                 await channel_trackers.send(message)
 
-        except:
-            message = self.getErrorMessage(ctx)
-            await ctx.author.send(message)
+        except Exception as e:
+            print('exception starting')
+            print(e)
+            await ctx.author.send(e)
 
         return
 
@@ -161,7 +162,7 @@ class UnionTracker(commands.Cog):
         channel_trackers = self.getTrackersChannel(ctx)
 
         try:
-            union = self.getUnionByIdentifier(identifier)
+            union = self.getUnionByIdentifier(ctx, identifier)
 
             if union is not None:
                 updated = self.updateUnionOwner(union.id, leader, leaderId)
@@ -170,8 +171,9 @@ class UnionTracker(commands.Cog):
                 await channel_trackers.send(message)
 
         except:
-            message = self.getErrorMessage(ctx)
-            await ctx.author.send(message)
+            return
+            # message = self.getErrorMessage(ctx)
+            # await ctx.author.send(message)
 
         return
 
@@ -183,7 +185,7 @@ class UnionTracker(commands.Cog):
     def getTrackersChannel(self, ctx):
         return get(ctx.guild.channels, name=CHANNEL_TRACKERS)
 
-    def getUnionByIdentifier(self, ctx, identifier: str = None):
+    async def getUnionByIdentifier(self, ctx, identifier: str = None):
         try:
             if identifier is not None:
                 query = "SELECT * FROM Unions WHERE initials = '{}' LIMIT 1".format(identifier)
@@ -204,35 +206,54 @@ class UnionTracker(commands.Cog):
             message = self.getErrorMessage(ctx)
             await ctx.author.send(message)
 
-    def getUnionList(self, ctx):
+    async def getUnionList(self, ctx):
         try:
-            query = "SELECT * FROM Unions ORDER BY rank DESC"
-            return self.cursor.execute(query).fetchall()
+            self.cursor.execute("""SELECT * FROM Unions ORDER BY rank ASC""")
 
-        except:
+            return self.cursor.fetchall()
+
+        except Exception as e:
             message = self.getErrorMessage(ctx)
             await ctx.author.send(message)
 
         return None
 
     def getUnionListMessage(self, ctx, unionList: list = []):
-        if len(unionList) > 0:
-            embed = Embed(
-                title="Top 20 Union List",
-                icon_url='https://i.imgur.com/fr8ZSnI.jpg'
-            )
-        list = "\n"
-        for union in unionList:
-            list = list + """{rank}. {name} - {initials} - {leader}\n""".format(rank=union.rank, name=union.name, initials=union.initials, leader=union.leader)
+        if unionList is not []:
+            embed = Embed()
+            embed.set_thumbnail(url='https://i.imgur.com/fr8ZSnI.jpg')
 
-        embed.add_field(name="Top Unions", value=list)
+            for v in ['rank', 'name', 'initials']:
+                values = ''
+                for union in unionList:
+                    try:
+                        values = values + "{}\n".format(union[v])
+                    except:
+                        pass
+                embed.add_field(name=v, value=values, inline=True)
+
 
         return embed
 
-    def addUnion(self, ctx, union: list = []):
+    def getUnionMessage(self, ctx, union):
+        embed = Embed(
+            title="Union - {}".format(union['name'])
+        )
+        embed.set_thumbnail(url='https://i.imgur.com/fr8ZSnI.jpg')
+
+        embed.add_field(name="Name", value=union['name'], inline=True)
+        embed.add_field(name="Initials", value=union['initials'], inline=True)
+        embed.add_field(name="Rank", value=union['rank'], inline=True)
+        embed.add_field(name="Leader", value=union['leader'], inline=True)
+        embed.add_field(name="Leader Id", value=union['leaderId'], inline=True)
+
+        return embed
+
+
+    async def addUnion(self, ctx, union: list = []):
         try:
             # [rank,name,unionId,initials,leader,leaderId]
-            query = "INSERT INTO Unions (rank, name, unionId, initials, leader, leaderId) VALUES ({},{},{},{},{},{})".format(
+            query = "INSERT INTO Unions (rank, name, unionId, initials, leader, leaderId) VALUES ({},'{}',{},'{}','{}',{})".format(
                 int(union[0]),
                 union[1],
                 int(union[2]),
@@ -251,7 +272,7 @@ class UnionTracker(commands.Cog):
 
         return None
 
-    def delUnion(self, ctx, union):
+    async def delUnion(self, ctx, union):
         try:
             query = "DELETE FROM Unions WHERE id = {}".format(int(union.id))
             self.cursor.execute(query)
@@ -265,7 +286,7 @@ class UnionTracker(commands.Cog):
 
         return None
 
-    def updateUnionRank(self, ctx, unionId: int = None, rank: int = None)
+    async def updateUnionRank(self, ctx, unionId: int = None, rank: int = None):
         try:
             query = "UPDATE Unions SET rank = {} WHERE id = {}".format(int(rank), int(unionId))
             self.cursor.execute(query)

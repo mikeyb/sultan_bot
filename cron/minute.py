@@ -25,18 +25,16 @@ async def on_ready():
     await process_timers()
     return await client.logout()
 
-
-
 async def process_timers():
     try:
-        now = int(datetime.now(timezone.est).strftime('%s'))
+        now = int(datetime.now(timezone.utc).strftime('%s'))
         query = "SELECT * FROM Timers WHERE endTime < ?"
         results = cursor.execute(query, (now,)).fetchall()
 
         if results:
 
             for row in results:
-                guild = get(client.guilds, name='YMOC')
+                guild = get(client.guilds, name=DISCORD_GUILD)
                 user = guild.get_member(int(row['userId']))
 
                 if row['type'] == 'A':
@@ -49,7 +47,6 @@ async def process_timers():
                 await user.send('Your {} timer is complete'.format(type))
 
                 query="DELETE FROM Timers WHERE id=?"
-                print(row['id'])
                 cursor.execute(query, (row['id'],))
                 conn.commit()
     except Exception as error:

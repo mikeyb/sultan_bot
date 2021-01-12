@@ -9,7 +9,6 @@ from discord.utils import get
 
 load_dotenv()
 
-CHANNEL_COMPANION_HALL = os.getenv('CHANNEL_COMPANION_HALL')
 CHANNEL_TIMERS = os.getenv('CHANNEL_TIMERS')
 DATABASE_TIMERS = os.getenv('DATABASE_TIMERS')
 DATABASE_USER_PREFS = os.getenv('DATABASE_USER_PREFS')
@@ -20,14 +19,12 @@ class AcademyTimer(commands.Cog):
         self.bot = bot
         self.dbtimers = sqlite3.connect(DATABASE_TIMERS)
         self.dbtimers.row_factory = sqlite3.Row
-        self.dbuserprefs = sqlite3.connect(DATABASE_USER_PREFS)
         self.cursortimers = self.dbtimers.cursor()
-        self.cursoruserprefs = self.dbuserprefs.cursor()
 
     @commands.group(
         name='academy',
         description='Academy timer commands',
-        aliases=[]
+        aliases=['a', 'at']
     )
     async def academy(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -35,52 +32,48 @@ class AcademyTimer(commands.Cog):
 
                 user = ctx.author.id
                 channel_timers = self.getTimersChannel(ctx)
-                channel_companion_hall = self.getCompanionHallChannel(ctx)
 
                 activeTimer = self.getActiveTimer(user)
+
                 if activeTimer:
                     message = """{} you already have an Academy timer running.  Stop or restart your timer instead:\n`!academy stop`\n`!academy restart`""".format(ctx.author.mention)
-                    await channel.send(message)
+                    await channel_timers.send(message)
 
                 else:
                     self.startTimer(user)
 
-                    message = """{} your Academy timer is set to expire in 2 hours!""".format(ctx.author.mention)
+                    message = """{} your Academy timer is set to expire in 3 hours!""".format(ctx.author.mention)
                     await channel_timers.send(message)
 
-                    message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
-                    await channel_companion_hall.send(message)
-            except:
-                message = self.getErrorMessage(ctx)
-                await channel.send(message)
+            except Exception as error:
+                print(error)
         return
 
     @academy.command()
     async def stop(self, ctx):
         try:
             user = ctx.author.id
-            channel = self.getTimersChannel(ctx)
+            channel_timers = self.getTimersChannel(ctx)
 
             activeTimer = self.getActiveTimer(user)
-
+            print(activeTimer)
             if activeTimer:
                 self.stopTimer(activeTimer)
 
                 message = """{} your Academy timer has been stopped!""".format(ctx.author.mention)
-                await channel.send(message)
+                await channel_timers.send(message)
             else:
                 message = """{} you have no active Academy timers.  Start one by typing `!academy`""".format(ctx.author.mention)
-                await channel.send(message)
+                await channel_timers.send(message)
         except:
             message = self.getErrorMessage(ctx)
-            await channel.send(message)
+            await ctx.author.send(message)
 
     @academy.command()
     async def restart(self, ctx):
         try:
             user = ctx.author.id
             channel_timers = self.getTimersChannel(ctx)
-            channel_companion_hall = self.getCompanionHallChannel(ctx)
 
             activeTimer = self.getActiveTimer(user)
 
@@ -90,24 +83,25 @@ class AcademyTimer(commands.Cog):
             else:
                 self.startTimer(user)
 
-            message = """{} your Academy timer set to expire in 2 hours!""".format(ctx.author.mention)
+            message = """{} your Academy timer set to expire in 3 hours!""".format(ctx.author.mention)
             await channel_timers.send(message)
-
-            message = "@everyone {} has started an Academy room! Go get it.".format(ctx.author.mention)
-            await channel_companion_hall.send(message)
 
         except:
             message = self.getErrorMessage(ctx)
-            await channel.send(message)
+            await ctx.author.send(message)
 
     @academy.command()
     async def help(self, ctx):
-        message = """
-This command will start a timer for 2 hours and announce to the union you have opened an Academy room.
-        """
-        return
+        message = """```!academy\n
+This command will start a timer for 3 hours and remind you when your Academy training is complete.\n\n
+!academy stop\n
+This command will remove your timer for the Academy\n\n
+!acadent restart\n
+This command will restart your timer for the Academy
+        ```"""
+        return await ctx.send(message)
 
-    def getErrorMessage(ctx):
+    def getErrorMessage(self, ctx):
         return """
         {} something went wrong.  Please try again in a few minutes.
         """.format(ctx.author.mention)
@@ -115,13 +109,10 @@ This command will start a timer for 2 hours and announce to the union you have o
     def getTimersChannel(self, ctx):
         return get(ctx.guild.channels, name=CHANNEL_TIMERS)
 
-    def getCompanionHallChannel(self, ctx):
-        return get(ctx.guild.channels, name=CHANNEL_COMPANION_HALL)
-
     def getActiveTimer(self, user):
         try:
             now = self.timeNow()
-            query = "SELECT * FROM Timers WHERE userId = ? AND endTime > ? AND type = ? ORDER BY endTime DESC LIMIT 1"
+            query = "SELECT * FROM Timers WHERE userId=? AND endTime > ? AND type=? ORDER BY endTime DESC LIMIT 1"
 
             return self.cursortimers.execute(query, (user, now, 'A')).fetchone()
 
@@ -130,7 +121,7 @@ This command will start a timer for 2 hours and announce to the union you have o
 
     def startTimer(self, user):
         try:
-            endTime = self.timeNow() + (60 * 60 * 2)
+            endTime = self.timeNow() + (60 * 60 * 3)
             query = "INSERT INTO Timers (userId, endTime, type) VALUES (?, ?, ?)"
 
             self.cursortimers.execute(query, (user, endTime, 'A'))
